@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CutSheet — Billing Hub for Video Editors</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#0D1117; }
+  .card-row { transition: box-shadow .15s, transform .15s; }
+  .fade-in { animation: fadeIn .25s ease; }
+  @keyframes fadeIn { from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
+  .modal-backdrop { background: rgba(0,0,0,.65); }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #2A3142; border-radius: 4px; }
+  .icon-btn { display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:6px; }
+  .icon-btn:hover { background:#242B3D; }
+  .row-actions { opacity: 0; transition: opacity .15s; }
+  .row-hover:hover .row-actions { opacity: 1; }
+  .toast { animation: toastIn .2s ease, toastOut .2s ease 2.3s forwards; }
+  @keyframes toastIn { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+  @keyframes toastOut { from{opacity:1;} to{opacity:0; transform:translateY(8px);} }
+  .spinner { border: 2px solid #2A3142; border-top-color:#A77DFF; border-radius:50%; width:16px; height:16px; animation: spin .6s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .badge { font-size: 11px; font-weight:600; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; letter-spacing: .03em; }
+  .badge-draft { background:#242B3D; color:#9B96B5; }
+  .badge-sent { background:rgba(167,125,255,.16); color:#D6BDFF; }
+  .badge-paid { background:rgba(34,197,94,.16); color:#4ADE80; }
+  .badge-overdue { background:rgba(239,68,68,.16); color:#F87171; }
+  .card { background:#1A1F2E; border:1px solid #262C40; }
+  .field { background:#141925; border:1px solid #2A3142; color:#E9E6F5; }
+  .field::placeholder { color:#6B6685; }
+  .field:focus { outline:none; box-shadow:0 0 0 2px #A77DFF; border-color:#A77DFF; }
+</style>
+</head>
+<body class="text-[#E9E6F5]">
+
+<header class="bg-[#1A1F2E] border-b border-[#262C40] text-white px-6 py-4 flex items-center justify-between">
+  <div class="flex items-center gap-3">
+    <div class="w-9 h-9 bg-[#A77DFF] rounded-lg flex items-center justify-center text-lg font-bold text-[#0D1117]">C</div>
+    <div>
+      <div class="font-bold text-lg leading-tight">CutSheet</div>
+      <div class="text-xs text-[#9B96B5] leading-tight">Client &amp; project billing hub for freelance video editors — MVP (real backend, persisted data)</div>
+    </div>
+  </div>
+  <div class="flex items-center gap-3">
+    <div id="loadingIndicator" class="hidden items-center gap-2 text-xs text-[#9B96B5]"><span class="spinner"></span> Syncing…</div>
+    <button id="resetBtn" class="text-sm bg-[#242B3D] hover:bg-[#2E3650] text-[#E9E6F5] px-3 py-1.5 rounded-md">Reset demo data</button>
+    <button id="logoutBtn" class="text-sm bg-[#242B3D] hover:bg-[#2E3650] text-[#E9E6F5] px-3 py-1.5 rounded-md">Log out</button>
+  </div>
+</header>
+
+<div class="max-w-7xl mx-auto px-5 pt-5">
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="card rounded-xl p-4">
+      <div class="text-xs text-[#9B96B5] mb-1">Outstanding</div>
+      <div id="statOutstanding" class="text-2xl font-bold text-[#E9E6F5]">$0</div>
+    </div>
+    <div class="card rounded-xl p-4">
+      <div class="text-xs text-[#9B96B5] mb-1">Overdue</div>
+      <div id="statOverdue" class="text-2xl font-bold text-[#F87171]">$0</div>
+    </div>
+    <div class="card rounded-xl p-4">
+      <div class="text-xs text-[#9B96B5] mb-1">Paid (all time)</div>
+      <div id="statPaid" class="text-2xl font-bold text-[#4ADE80]">$0</div>
+    </div>
+    <div class="card rounded-xl p-4">
+      <div class="text-xs text-[#9B96B5] mb-1">Unbilled work</div>
+      <div id="statUnbilled" class="text-2xl font-bold text-[#E9E6F5]">$0</div>
+    </div>
+  </div>
+</div>
+
+<main class="max-w-7xl mx-auto p-5 grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+  <div class="lg:col-span-1 space-y-5">
+    <section class="card rounded-xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold text-[#E9E6F5]">Clients</h2>
+        <button id="newClientBtn" class="text-xs bg-[#A77DFF] hover:bg-[#8F5FE8] text-[#0D1117] font-medium px-2.5 py-1 rounded-md">+ New client</button>
+      </div>
+      <div id="clientList" class="space-y-1"></div>
+      <div id="emptyClients" class="hidden text-sm text-[#6B6685] text-center py-6">No clients yet.</div>
+    </section>
+
+    <section class="card rounded-xl p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold text-[#E9E6F5]">Projects</h2>
+        <button id="newProjectBtn" class="text-xs bg-[#242B3D] hover:bg-[#2E3650] text-[#E9E6F5] px-2.5 py-1 rounded-md">+ New</button>
+      </div>
+      <div id="projectList" class="space-y-2"></div>
+      <div id="emptyProjects" class="hidden text-sm text-[#6B6685] text-center py-6">No projects yet.</div>
+    </section>
+  </div>
+
+  <section class="lg:col-span-2 card rounded-xl p-4 h-fit">
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="font-semibold text-[#E9E6F5]">Invoices</h2>
+      <button id="newInvoiceBtn" class="text-xs bg-[#A77DFF] hover:bg-[#8F5FE8] text-[#0D1117] font-medium px-2.5 py-1.5 rounded-md">+ Build invoice</button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="text-left text-xs text-[#6B6685] border-b border-[#262C40]">
+            <th class="py-2 pr-2 font-medium">Invoice</th>
+            <th class="py-2 pr-2 font-medium">Client</th>
+            <th class="py-2 pr-2 font-medium">Issued</th>
+            <th class="py-2 pr-2 font-medium">Due</th>
+            <th class="py-2 pr-2 font-medium text-right">Total</th>
+            <th class="py-2 pr-2 font-medium">Status</th>
+            <th class="py-2 pr-2 font-medium text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="invoiceRows"></tbody>
+      </table>
+    </div>
+    <div id="emptyInvoices" class="hidden text-sm text-[#6B6685] text-center py-8">No invoices yet — build one from unbilled work.</div>
+  </section>
+
+</main>
+
+<!-- Client add/edit modal -->
+<div id="clientFormModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+  <div class="card rounded-xl shadow-xl max-w-md w-full p-5 fade-in">
+    <div class="flex items-start justify-between mb-3">
+      <h3 id="clientFormTitle" class="font-bold text-lg text-[#E9E6F5]">New client</h3>
+      <button id="closeClientForm" class="text-[#6B6685] hover:text-[#E9E6F5] text-xl leading-none">&times;</button>
+    </div>
+    <form id="clientForm" class="space-y-3">
+      <div>
+        <label class="block text-xs text-[#9B96B5] mb-1">Contact name</label>
+        <input id="cf_name" required class="field w-full rounded-md px-3 py-1.5 text-sm">
+      </div>
+      <div>
+        <label class="block text-xs text-[#9B96B5] mb-1">Company</label>
+        <input id="cf_company" required class="field w-full rounded-md px-3 py-1.5 text-sm">
+      </div>
+      <div>
+        <label class="block text-xs text-[#9B96B5] mb-1">Email</label>
+        <input id="cf_email" type="email" required class="field w-full rounded-md px-3 py-1.5 text-sm">
+      </div>
+      <div id="clientFormError" class="text-sm text-[#F87171] hidden"></div>
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" id="cancelClientForm" class="text-sm text-[#9B96B5] hover:text-[#E9E6F5] px-3 py-1.5">Cancel</button>
+        <button type="submit" class="text-sm bg-[#A77DFF] hover:bg-[#8F5FE8] text-[#0D1117] font-medium px-4 py-1.5 rounded-md">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Project add/edit modal -->
+<div id="projectFormModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+  <div class="card rounded-xl shadow-xl max-w-md w-full p-5 fade-in">
+    <div class="flex items-start justify-between mb-3">
+      <h3 id="projectFormTitle" class="font-bold text-lg text-[#E9E6F5]">New project</h3>
+      <button id="closeProjectForm" class="text-[#6B6685] hover:text-[#E9E6F5] text-xl leading-none">&times;</button>
+    </div>
+    <form id="projectForm" class="space-y-3">
+      <div>
+        <label class="block text-xs text-[#9B96B5] mb-1">Client</label>
+        <select id="pf_client" required class="field w-full rounded-md px-3 py-1.5 text-sm"></select>
+      </div>
+      <div>
+        <label class="block text-xs text-[#9B96B5] mb-1">Project title</label>
+        <input id="pf_title" required class="field w-full rounded-md px-3 py-1.5 text-sm">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs text-[#9B96B5] mb-1">Billing type</label>
+          <select id="pf_billing_type" class="field w-full rounded-md px-3 py-1.5 text-sm">
+            <option value="hourly">Hourly</option>
+            <option value="flat">Flat fee</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs text-[#9B96B5] mb-1" id="pf_rate_label">Hourly rate ($)</label>
+          <input id="pf_rate" type="number" step="0.01" min="0" required class="field w-full rounded-md px-3 py-1.5 text-sm">
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs text-[#9B96B5] mb-1">Status</label>
+        <select id="pf_status" class="field w-full rounded-md px-3 py-1.5 text-sm">
+          <option value="active">Active</option>
+          <option value="completed">Completed</option>
+        </select>
+      </div>
+      <div id="projectFormError" class="text-sm text-[#F87171] hidden"></div>
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" id="cancelProjectForm" class="text-sm text-[#9B96B5] hover:text-[#E9E6F5] px-3 py-1.5">Cancel</button>
+        <button type="submit" class="text-sm bg-[#A77DFF] hover:bg-[#8F5FE8] text-[#0D1117] font-medium px-4 py-1.5 rounded-md">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Log work (new line item) modal -->
+<div id="lineItemFormModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+  <div class="card rounded-xl shadow-xl max-w-md w-full p-5 fade-in">
+    <div class="flex items-start justify-between mb-1">
+      <h3 class="font-bold text-lg text-[#E9E6F5]">Log work</h3>
+      <button id="closeLineItemForm" class="text-[#6B6685] hover:text-[#E9E6F5] text-xl leading-none">&times;</button>
+    </div>
+    <p id="lineItemProjectMeta" class="text-sm text-[#9B96B5] mb-4"></p>
+    <form id="lineItemForm" class="space-y-3">
+      <div>
+        <label class="block text-xs text-[#9B96B5] mb-1">Description</label>
+        <input id="lf_description" required class="field w-full rounded-md px-3 py-1.5 text-sm">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div id="lf_hours_wrap">
+          <label class="block text-xs text-[#9B96B5] mb-1">Hours</label>
+          <input id="lf_hours" type="number" step="0.25" min="0" class="field w-full rounded-md px-3 py-1.5 text-sm">
+        </div>
+        <div id="lf_amount_wrap" class="hidden">
+          <label class="block text-xs text-[#9B96B5] mb-1">Amount ($)</label>
+          <input id="lf_amount" type="number" step="0.01" min="0" class="field w-full rounded-md px-3 py-1.5 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs text-[#9B96B5] mb-1">Date</label>
+          <input id="lf_date" type="date" required class="field w-full rounded-md px-3 py-1.5 text-sm">
+        </div>
+      </div>
+      <div id="lineItemFormError" class="text-sm text-[#F87171] hidden"></div>
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" id="cancelLineItemForm" class="text-sm text-[#9B96B5] hover:text-[#E9E6F5] px-3 py-1.5">Cancel</button>
+        <button type="submit" class="text-sm bg-[#A77DFF] hover:bg-[#8F5FE8] text-[#0D1117] font-medium px-4 py-1.5 rounded-md">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Build invoice modal -->
+<div id="invoiceBuilderModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+  <div class="card rounded-xl shadow-xl max-w-lg w-full p-5 fade-in">
+    <div class="flex items-start justify-between mb-3">
+      <h3 class="font-bold text-lg text-[#E9E6F5]">Build invoice</h3>
+      <button id="closeInvoiceBuilder" class="text-[#6B6685] hover:text-[#E9E6F5] text-xl leading-none">&times;</button>
+    </div>
+    <label class="block text-xs text-[#9B96B5] mb-1">Client</label>
+    <select id="ib_client" class="field w-full rounded-md px-3 py-1.5 text-sm mb-3"></select>
+    <div class="text-xs text-[#9B96B5] mb-1">Unbilled work</div>
+    <div id="ib_lineItems" class="space-y-2 max-h-64 overflow-y-auto border border-[#262C40] rounded-md p-2 mb-3"></div>
+    <div id="ib_empty" class="hidden text-sm text-[#6B6685] text-center py-4">No unbilled work for this client.</div>
+    <div class="flex items-center justify-between border-t border-[#262C40] pt-3">
+      <div class="text-sm font-semibold text-[#E9E6F5]">Total: <span id="ib_total">$0.00</span></div>
+      <button id="ib_create" class="text-sm bg-[#A77DFF] hover:bg-[#8F5FE8] text-[#0D1117] font-medium px-4 py-1.5 rounded-md">Create invoice</button>
+    </div>
+    <div id="invoiceBuilderError" class="text-sm text-[#F87171] mt-2 hidden"></div>
+  </div>
+</div>
+
+<!-- Invoice detail modal -->
+<div id="invoiceDetailModal" class="fixed inset-0 modal-backdrop hidden items-center justify-center z-50 p-4">
+  <div class="card rounded-xl shadow-xl max-w-lg w-full p-5 fade-in">
+    <div class="flex items-start justify-between mb-1">
+      <div>
+        <h3 id="idm_number" class="font-bold text-lg text-[#E9E6F5]"></h3>
+        <div id="idm_client" class="text-sm text-[#9B96B5]"></div>
+      </div>
+      <button id="closeInvoiceDetail" class="text-[#6B6685] hover:text-[#E9E6F5] text-xl leading-none">&times;</button>
+    </div>
+    <div class="text-xs text-[#6B6685] mb-3"><span id="idm_dates"></span></div>
+    <div id="idm_lineItems" class="space-y-1 border-t border-b border-[#262C40] py-3 mb-3 text-sm"></div>
+    <div class="flex items-center justify-between mb-4">
+      <span id="idm_status" class="badge"></span>
+      <div class="text-lg font-bold text-[#E9E6F5]" id="idm_total"></div>
+    </div>
+    <div class="flex flex-col gap-2">
+      <button id="idm_markSent" class="text-sm bg-[#A77DFF] hover:bg-[#8F5FE8] text-[#0D1117] font-medium px-3 py-2 rounded-md">Mark as sent</button>
+      <button id="idm_markPaid" class="text-sm bg-[#22C55E] hover:bg-[#16A34A] text-[#0D1117] font-medium px-3 py-2 rounded-md">Mark as paid</button>
+      <button id="idm_delete" class="text-sm bg-[#EF4444] hover:bg-[#DC2626] text-white px-3 py-2 rounded-md">Delete draft</button>
+      <button id="closeInvoiceDetail2" class="text-sm text-[#9B96B5] hover:text-[#E9E6F5] px-3 py-2">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 items-end"></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

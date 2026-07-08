@@ -1,0 +1,22 @@
+{
+  "name": "cutsheet-mvp",
+  "version": "0.1.0",
+  "description": "CutSheet - client/project billing hub MVP for freelance video editors",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "demo": "node demo.js",
+    "test": "node test/run.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "pg": "^8.12.0"
+  },
+  "devDependencies": {
+    "embedded-postgres": "18.4.0-beta.17"
+  }
+}

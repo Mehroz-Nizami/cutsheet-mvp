@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CutSheet — Login</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { background:#0D1117; }
+  .field { background:#141925; border:1px solid #2A3142; color:#E9E6F5; }
+  .field::placeholder { color:#6B6685; }
+  .field:focus { outline:none; box-shadow:0 0 0 2px #A77DFF; border-color:#A77DFF; }
+</style>
+</head>
+<body class="min-h-screen flex items-center justify-center">
+  <div class="bg-[#1A1F2E] border border-[#262C40] rounded-xl shadow-sm p-8 w-full max-w-sm">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-9 h-9 bg-[#A77DFF] rounded-lg flex items-center justify-center text-lg font-bold text-[#0D1117]">C</div>
+      <div>
+        <div class="font-bold text-lg leading-tight text-[#E9E6F5]">CutSheet</div>
+        <div class="text-xs text-[#9B96B5] leading-tight">Editor sign in</div>
+      </div>
+    </div>
+    <form id="loginForm">
+      <label class="block text-sm text-[#9B96B5] mb-1">Password</label>
+      <input id="password" type="password" class="field w-full rounded-md px-3 py-2 mb-3" placeholder="Enter password" autofocus>
+      <div id="error" class="text-sm text-[#F87171] mb-3 hidden">Incorrect password</div>
+      <button type="submit" class="w-full bg-[#A77DFF] hover:bg-[#8F5FE8] text-[#0D1117] py-2 rounded-md font-medium">Sign in</button>
+    </form>
+  </div>
+  <script>
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const password = document.getElementById('password').value;
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      if (res.ok) {
+        window.location.href = '/';
+      } else {
+        document.getElementById('error').classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

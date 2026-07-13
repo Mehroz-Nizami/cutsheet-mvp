@@ -19,8 +19,8 @@ app.use(
 );
 
 function requireAuth(req, res, next) {
-  if (req.session && req.session.authed) return next();
-  return res.status(401).json({ error: 'Not authenticated' });
+  // Demo mode: public access, no login required.
+  return next();
 }
 
 // Wraps async route handlers so rejected promises reach Express's error handler.
@@ -32,12 +32,9 @@ function newId(prefix) {
 
 // ---- Auth routes ----
 app.post('/api/login', (req, res) => {
-  const { password } = req.body || {};
-  if (password === CUTSHEET_PASSWORD) {
-    req.session.authed = true;
-    return res.json({ ok: true });
-  }
-  return res.status(401).json({ error: 'Incorrect password' });
+  // Demo mode: any login attempt succeeds.
+  req.session.authed = true;
+  return res.json({ ok: true });
 });
 
 app.post('/api/logout', (req, res) => {
@@ -45,7 +42,7 @@ app.post('/api/logout', (req, res) => {
 });
 
 app.get('/api/session', (req, res) => {
-  res.json({ authed: !!(req.session && req.session.authed) });
+  res.json({ authed: true });
 });
 
 // ---- Client routes ----
@@ -286,7 +283,6 @@ app.post('/api/reset', requireAuth, ah(async (req, res) => {
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', (req, res) => {
-  if (!(req.session && req.session.authed)) return res.redirect('/login.html');
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
@@ -296,11 +292,15 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
+const DEMO_RESET_INTERVAL_MS = 6 * 60 * 60 * 1000; // demo data resets every 6h
+
 async function start() {
   await init();
+  await reseed(); // Demo mode: fresh seed data on every boot
+  setInterval(() => reseed().catch((e) => console.error('demo reseed failed:', e)), DEMO_RESET_INTERVAL_MS);
   app.listen(PORT, () => {
     console.log(`CutSheet MVP running at http://localhost:${PORT}`);
-    console.log(`Login password: ${CUTSHEET_PASSWORD} (set CUTSHEET_PASSWORD env var to change)`);
+    console.log('Demo mode: open access, data auto-resets.');
   });
 }
 

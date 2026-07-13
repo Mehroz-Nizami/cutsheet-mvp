@@ -8,7 +8,5 @@ services:
     envVars:
       - key: DATABASE_URL
         sync: false # paste your Neon connection string here in the Render dashboard
-      - key: CUTSHEET_PASSWORD
-        sync: false # set a real password — don't ship with the editor2026 default
       - key: SESSION_SECRET
         generateValue: true # Render generates a random secret for you

@@ -3,46 +3,62 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CutSheet — Login</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<title>CutSheet — Live demo</title>
 <style>
-  body { background:#0D1117; }
-  .field { background:#141925; border:1px solid #2A3142; color:#E9E6F5; }
-  .field::placeholder { color:#6B6685; }
-  .field:focus { outline:none; box-shadow:0 0 0 2px #A77DFF; border-color:#A77DFF; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'Segoe UI', Inter, sans-serif; background: #0A0A0C; color: #EDEEF2;
+    display: flex; align-items: center; justify-content: center; min-height: 100vh;
+    background-image: radial-gradient(circle, rgba(110,123,255,0.10) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  .card {
+    background: #101014; border: 1px solid #232329; border-radius: 16px;
+    padding: 44px 40px; width: 420px; max-width: calc(100vw - 32px); text-align: center;
+  }
+  .pill {
+    display: inline-block; font-family: ui-monospace, Consolas, monospace; font-size: 11px;
+    color: #3FB950; background: rgba(63,185,80,0.12); border: 1px solid rgba(63,185,80,0.35);
+    border-radius: 999px; padding: 4px 12px; margin-bottom: 20px; letter-spacing: 0.05em;
+  }
+  h1 { font-size: 26px; letter-spacing: -0.02em; margin-bottom: 8px; }
+  h1 .dot { color: #6E7BFF; }
+  .tag { color: #9CA0AA; font-size: 14px; margin-bottom: 24px; }
+  ul { list-style: none; text-align: left; margin: 0 auto 28px; display: inline-block; }
+  li { color: #9CA0AA; font-size: 13.5px; padding: 5px 0 5px 24px; position: relative; }
+  li::before { content: '✓'; position: absolute; left: 0; color: #3FB950; font-weight: 700; }
+  button {
+    width: 100%; padding: 14px; border-radius: 10px; border: none; cursor: pointer;
+    background: #EDEEF2; color: #0A0A0C; font-size: 15px; font-weight: 600;
+    transition: background 0.15s ease, transform 0.15s ease;
+  }
+  button:hover { background: #FFFFFF; transform: translateY(-1px); }
+  .note { color: #62666E; font-size: 12px; margin-top: 16px; font-family: ui-monospace, Consolas, monospace; }
 </style>
 </head>
-<body class="min-h-screen flex items-center justify-center">
-  <div class="bg-[#1A1F2E] border border-[#262C40] rounded-xl shadow-sm p-8 w-full max-w-sm">
-    <div class="flex items-center gap-3 mb-6">
-      <div class="w-9 h-9 bg-[#A77DFF] rounded-lg flex items-center justify-center text-lg font-bold text-[#0D1117]">C</div>
-      <div>
-        <div class="font-bold text-lg leading-tight text-[#E9E6F5]">CutSheet</div>
-        <div class="text-xs text-[#9B96B5] leading-tight">Editor sign in</div>
-      </div>
-    </div>
-    <form id="loginForm">
-      <label class="block text-sm text-[#9B96B5] mb-1">Password</label>
-      <input id="password" type="password" class="field w-full rounded-md px-3 py-2 mb-3" placeholder="Enter password" autofocus>
-      <div id="error" class="text-sm text-[#F87171] mb-3 hidden">Incorrect password</div>
-      <button type="submit" class="w-full bg-[#A77DFF] hover:bg-[#8F5FE8] text-[#0D1117] py-2 rounded-md font-medium">Sign in</button>
-    </form>
-  </div>
-  <script>
-    document.getElementById('loginForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const password = document.getElementById('password').value;
-      const res = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      });
-      if (res.ok) {
-        window.location.href = '/';
-      } else {
-        document.getElementById('error').classList.remove('hidden');
-      }
+<body>
+<div class="card">
+  <span class="pill">● LIVE DEMO</span>
+  <h1>CutSheet<span class="dot">.</span></h1>
+  <p class="tag">Client, project & billing hub for freelance video editors</p>
+  <ul>
+    <li>Logged work flows straight into invoices</li>
+    <li>Server-enforced guard rails: no double-billing</li>
+    <li>Draft → sent → paid, with correct math</li>
+  </ul>
+  <button id="enterBtn">Enter live demo →</button>
+  <p class="note">no signup · no credentials · demo data resets automatically</p>
+  <p class="note">built &amp; operated by Auberix</p>
+</div>
+<script>
+  document.getElementById('enterBtn').addEventListener('click', async () => {
+    await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
     });
-  </script>
+    window.location.href = '/';
+  });
+</script>
 </body>
 </html>
